@@ -1,16 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Button, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
-import { useGlobalSearchParams } from 'expo-router';
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { useGlobalSearchParams, useNavigation } from 'expo-router';
+import { addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import Spinner from 'react-native-loading-spinner-overlay'
 import { firestoreDB } from '@/config/FirebaseConfig';
 import { useAuth } from '@/context/AuthContext';
 
 const groupsPage = () => {
+    const navigation = useNavigation();
     const { id } = useGlobalSearchParams();
     const { user } = useAuth();
+    const scrollViewRef = useRef<any>();
 
     const [message, setMessage] = useState<string>('');
     const [messages, setMessages] = useState<any[]>([]);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+
+    const getGroupInfo = async () => {
+        const groupId = Array.isArray(id) ? id[0] : id;
+
+        if (groupId) {
+            const docRef = doc(firestoreDB, "groups", groupId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                navigation.setOptions({
+                    headerTitle: docSnap.data().name
+                })
+            } else {
+                console.log("No such document!");
+            }
+        }
+    };
 
     const sendMessages = async () => {
         if (message.trim().length > 0) {
@@ -25,21 +45,36 @@ const groupsPage = () => {
     };
 
     useEffect(() => {
+        setLoadingMessages(true);
+
         const messagesCollection = collection(firestoreDB, `groups/${id}/messages`);
         const q = query(messagesCollection, orderBy("createdAt", "asc"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
+
             const newMessages = snapshot.docs.map((doc) => {
                 return { id: doc.id, ...doc.data() }
             });
-            setMessages(newMessages)
+            setMessages(newMessages);
+            setLoadingMessages(false);
         });
 
         return unsubscribe;
     }, []);
 
+    useEffect(() => {
+        if (messages.length > 0) {
+            setTimeout(() => {
+                scrollViewRef.current.scrollToEnd({ animated: false });
+            }, 100);
+        }
+    }, [messages]);
 
-    const RenderMessage = ({ item }: any) => {
+    useLayoutEffect(() => {
+        getGroupInfo();
+    }, [id]);
+
+    const renderMessage = ({ item }: any) => {
         const isMe = item.from === user?.uid;
 
         return (
@@ -51,13 +86,24 @@ const groupsPage = () => {
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container} keyboardVerticalOffset={90}>
-            <FlatList data={messages} renderItem={RenderMessage} keyExtractor={(item) => item.id} />
-            <View style={styles.inputContainer}>
-                <TextInput style={styles.input} value={message} onChangeText={setMessage} multiline={true} />
-                <Button title="Send" onPress={sendMessages} />
-            </View>
-        </KeyboardAvoidingView>
+        <>
+            <Spinner visible={loadingMessages} />
+            {!loadingMessages && (
+                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 130} style={styles.container}>
+                    <FlatList
+                        data={messages}
+                        renderItem={renderMessage}
+                        keyExtractor={(item) => item.id}
+                        ref={scrollViewRef}
+                        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+                    />
+                    <View style={styles.inputContainer}>
+                        <TextInput style={styles.input} value={message} onChangeText={setMessage} multiline={true} />
+                        <Button title="Send" onPress={sendMessages} />
+                    </View>
+                </KeyboardAvoidingView>
+            )}
+        </>
     );
 };
 
@@ -81,7 +127,7 @@ const styles = StyleSheet.create({
     messageContainer: {
         padding: 10,
         borderWidth: 10,
-        marginTop: 10,
+        marginVertical: 10,
         borderRadius: 15,
         marginHorizontal: 10,
         maxWidth: '80%',
@@ -104,7 +150,7 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: 'gray',
         marginTop: 5,
-    }
+    },
 
 });
 
