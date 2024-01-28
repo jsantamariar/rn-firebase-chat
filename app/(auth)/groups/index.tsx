@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Href, Link, useRouter } from 'expo-router';
-import { addDoc, collection, getDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import Spinner from "react-native-loading-spinner-overlay";
 import { Ionicons } from '@expo/vector-icons';
 import { firestoreDB } from '@/config/FirebaseConfig';
@@ -22,6 +22,8 @@ const groups = () => {
     const [loading, setLoading] = useState(false);
     const [loadingGroups, setLoadingGroups] = useState(false);
     const [groups, setGroups] = useState<Group[]>([]);
+
+    const groupsCollection = collection(firestoreDB, "groups");
 
     const handleCreateGroups = async () => {
         Alert.prompt("Create a new group", "Enter a new group name", [
@@ -56,9 +58,12 @@ const groups = () => {
         ]);
     };
 
+    const handleDeleteGroup = async (groupId: string) => {
+        await deleteDoc(doc(firestoreDB, "groups", groupId));
+    };
+
     useEffect(() => {
         setLoadingGroups(true);
-        const groupsCollection = collection(firestoreDB, "groups");
         const q = query(groupsCollection, orderBy("createdAt", "asc"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -76,7 +81,6 @@ const groups = () => {
         <>
             <View style={styles.container}>
                 <Spinner visible={loading} />
-
                 {loadingGroups && (
                     <ScrollView>
                         {[...new Array(8)].map((_, index) => (
@@ -84,28 +88,31 @@ const groups = () => {
                         ))}
                     </ScrollView>
                 )}
-
                 {!loadingGroups && groups.length === 0 && (
                     <View style={styles.notChatsContainer}>
                         <Text style={styles.notChatsText}>You haven't started any chat yet.</Text>
                         <Text style={styles.notChatsText}> Click on the plus button to start one</Text>
                     </View>
                 )}
-
                 {(!loading || !loadingGroups) && groups.length > 0 && (
                     <ScrollView>
                         {groups.map((group) => (
-                            <Link href={`/groups/${group.id}` as Href<string>} key={group.id} asChild>
-                                <TouchableOpacity style={styles.groupCard}>
-                                    <Text style={styles.groupName}>{group.name}</Text>
-                                    <Text style={styles.groupDescription}>{group.description}</Text>
+                            <View style={styles.groupCard}>
+                                <Link href={`/groups/${group.id}` as Href<string>} key={group.id} asChild>
+                                    <TouchableOpacity>
+                                        <Text style={styles.groupName}>{group.name}</Text>
+                                        <Text style={styles.groupDescription}>{group.description}</Text>
+                                    </TouchableOpacity>
+                                </Link>
+                                <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={styles.trashIcon} >
+                                    <Ionicons name="trash-bin-outline" size={24} color="#000" />
                                 </TouchableOpacity>
-                            </Link>
+                            </View>
                         ))}
                     </ScrollView>
                 )}
                 <TouchableOpacity style={styles.fab} onPress={handleCreateGroups}>
-                    <Ionicons name="add" size={24} color="white" />
+                    <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
             </View >
         </>
@@ -131,7 +138,9 @@ const styles = StyleSheet.create({
     groupCard: {
         marginVertical: 2,
         padding: 15,
-        backgroundColor: "#fff"
+        backgroundColor: "#fff",
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     groupName: {
         fontSize: 18,
@@ -149,6 +158,9 @@ const styles = StyleSheet.create({
     },
     notChatsText: {
         textAlign: 'center',
+    },
+    trashIcon: {
+        marginLeft: 'auto'
     },
 });
 
