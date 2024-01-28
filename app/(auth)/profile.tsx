@@ -84,7 +84,7 @@ const profile = () => {
                         <Text style={styles.userInfo}>
                             {userInfo.username}
                         </Text>
-                        <Ionicons onPress={handleUpdateUsername} name="create" size={24} color="black" />
+                        <Ionicons onPress={handleUpdateUsername} name="create" size={24} color="#000" />
                     </View>
                     <View style={styles.cardLabelContainer}>
                         <Text style={styles.label}>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     textInput: {
         height: 40,
         margin: 12,
-        borderColor: "black",
+        borderColor: "#000",
         borderWidth: 1,
         borderRadius: 9,
         padding: 10

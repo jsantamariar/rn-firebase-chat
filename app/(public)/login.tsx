@@ -73,19 +73,19 @@ const styles = StyleSheet.create({
         height: 40,
         width: '100%',
         margin: 12,
-        borderColor: "black",
+        borderColor: "#000",
         borderWidth: 1,
         borderRadius: 9,
         padding: 10
     },
     button: {
         padding: 10,
-        backgroundColor: 'black',
+        backgroundColor: '#000',
         borderRadius: 10,
         marginVertical: 10
     },
     text: {
-        color: "white"
+        color: "#fff"
     },
     questionsContainer: {
         display: 'flex',

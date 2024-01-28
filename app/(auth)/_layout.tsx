@@ -21,8 +21,8 @@ const tabsLayout = () => {
                 options={{
                     headerShown: false,
                     tabBarLabel: "Chat Groups",
-                    tabBarLabelStyle: { color: "black" },
-                    tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color="black" size={size} />,
+                    tabBarLabelStyle: { color: "#000" },
+                    tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color="#000" size={size} />,
                 }}
                 redirect={!user}
             />
@@ -30,8 +30,8 @@ const tabsLayout = () => {
                 name="profile"
                 options={{
                     tabBarLabel: "My Profile",
-                    tabBarLabelStyle: { color: "black" },
-                    tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color="black" size={size} />,
+                    tabBarLabelStyle: { color: "#000" },
+                    tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color="#000" size={size} />,
                     headerTitle: "My Profile"
                 }}
                 redirect={!user}
