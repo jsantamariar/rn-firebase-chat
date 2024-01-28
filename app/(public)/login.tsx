@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, Pressable, Alert } from 'react-native'
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
 import { Link } from 'expo-router';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "@firebase/auth";
 import Spinner from "react-native-loading-spinner-overlay";
 import { firebaseAuth } from '@/config/FirebaseConfig';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "@firebase/auth";
 
 const login = () => {
     const [email, setEmail] = useState('jorge@test.com');

@@ -1,5 +1,6 @@
-import LogoutButton from "@/components/LogoutButton";
 import { Stack } from "expo-router";
+import LogoutButton from "@/components/LogoutButton";
+
 
 
 const stackLayout = () => {
