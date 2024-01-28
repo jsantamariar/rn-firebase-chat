@@ -1,19 +1,28 @@
+import { Platform } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import LogoutButton from "@/components/LogoutButton";
 import { useAuth } from "@/context/AuthContext";
 
 const tabsLayout = () => {
     const { user } = useAuth();
 
     return (
-        <Tabs>
+        <Tabs screenOptions={{
+            tabBarStyle: {
+                height: Platform.OS === 'ios' ? 100 : 70,
+            },
+            tabBarItemStyle: {
+                margin: Platform.OS === 'ios' ? 5 : 15,
+                borderRadius: 10,
+            }
+        }}>
             <Tabs.Screen
                 name="groups"
                 options={{
                     headerShown: false,
                     tabBarLabel: "Chat Groups",
-                    tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
+                    tabBarLabelStyle: { color: "black" },
+                    tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color="black" size={size} />,
                 }}
                 redirect={!user}
             />
@@ -21,7 +30,8 @@ const tabsLayout = () => {
                 name="profile"
                 options={{
                     tabBarLabel: "My Profile",
-                    tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+                    tabBarLabelStyle: { color: "black" },
+                    tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color="black" size={size} />,
                     headerTitle: "My Profile"
                 }}
                 redirect={!user}
