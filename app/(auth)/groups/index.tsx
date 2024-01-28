@@ -97,8 +97,8 @@ const groups = () => {
                 {(!loading || !loadingGroups) && groups.length > 0 && (
                     <ScrollView>
                         {groups.map((group) => (
-                            <View style={styles.groupCard}>
-                                <Link href={`/groups/${group.id}` as Href<string>} key={group.id} asChild>
+                            <View key={group.id} style={styles.groupCard}>
+                                <Link href={`/groups/${group.id}` as Href<string>} asChild>
                                     <TouchableOpacity>
                                         <Text style={styles.groupName}>{group.name}</Text>
                                         <Text style={styles.groupDescription}>{group.description}</Text>
