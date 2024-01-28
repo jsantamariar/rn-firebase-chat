@@ -24,7 +24,7 @@ const InitialLayout = () => {
         <>
             {initialized ? (
                 <>
-                    <StatusBar barStyle={'dark-content'} backgroundColor={"red"} />
+                    <StatusBar barStyle={'dark-content'} backgroundColor={"#fff"} />
                     <Slot />
                 </>
             ) : (
@@ -33,8 +33,7 @@ const InitialLayout = () => {
                 </View>
             )}
         </>
-
-    )
+    );
 };
 
 const rootLayout = () => {
