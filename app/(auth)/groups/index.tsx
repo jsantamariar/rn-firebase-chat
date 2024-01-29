@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, TextInput } from 'react-native';
 import { Href, Link, useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import Spinner from "react-native-loading-spinner-overlay";
 import { Ionicons } from '@expo/vector-icons';
+import Dialog from "react-native-dialog";
 import { firestoreDB } from '@/config/FirebaseConfig';
 import { useAuth } from '@/context/AuthContext';
 import Skeleton from '@/components/Skeleton';
+import DeleteModal from '@/components/DeleteModal';
 
 interface Group {
     id: string;
+    from: string;
     createdAt: any[];
     name: string;
     description: string;
@@ -22,44 +25,85 @@ const groups = () => {
     const [loading, setLoading] = useState(false);
     const [loadingGroups, setLoadingGroups] = useState(false);
     const [groups, setGroups] = useState<Group[]>([]);
+    const [isAndroidModalVisible, setIsAndroidModalVisible] = useState(false);
+    const [newGroupText, setNewGroupText] = useState('');
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedGroupId, setSelectedGroupId] = useState<null | string>(null);
 
     const groupsCollection = collection(firestoreDB, "groups");
 
+    const handleCreateNewGroup = async () => {
+        try {
+            setLoading(true);
+            const doc = await addDoc(collection(firestoreDB, "groups"), {
+                from: user?.uid,
+                name: newGroupText,
+                description: `This was created by ${user?.email}`,
+                createdAt: serverTimestamp(),
+            });
+            const document = await getDoc(doc);
+            router.push(`/groups/${document.id}`);
+        } catch (error: any) {
+            console.error(error);
+            alert("Error creating group: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     const handleCreateGroups = async () => {
-        Alert.prompt("Create a new group", "Enter a new group name", [
-            {
-                text: 'Cancel',
-                style: 'cancel',
-            },
-            {
-                text: "Create Group",
-                onPress: async (inputGroupName) => {
-                    if (!inputGroupName) {
-                        alert("You must enter a group name!");
-                        return;
-                    }
-                    try {
-                        setLoading(true);
-                        const doc = await addDoc(collection(firestoreDB, "groups"), {
-                            name: inputGroupName,
-                            description: `This was created by ${user?.email}`,
-                            createdAt: serverTimestamp(),
-                        });
-                        const document = await getDoc(doc);
-                        router.push(`/groups/${document.id}`);
-                    } catch (error: any) {
-                        console.error(error);
-                        alert("Error creating group: " + error.message);
-                    } finally {
-                        setLoading(false);
+        if (Platform.OS === 'ios') {
+            Alert.prompt("Create a new group", "Enter a new group name", [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: "Create Group",
+                    onPress: async (inputGroupName) => {
+                        if (!inputGroupName) {
+                            alert("You must enter a group name!");
+                            return;
+                        }
+                        try {
+                            setLoading(true);
+                            const doc = await addDoc(collection(firestoreDB, "groups"), {
+                                from: user?.uid,
+                                name: inputGroupName,
+                                description: `This was created by ${user?.email}`,
+                                createdAt: serverTimestamp(),
+                            });
+                            const document = await getDoc(doc);
+                            router.push(`/groups/${document.id}`);
+                        } catch (error: any) {
+                            console.error(error);
+                            alert("Error creating group: " + error.message);
+                        } finally {
+                            setLoading(false);
+                        }
                     }
                 }
-            }
-        ]);
+            ]);
+        } else {
+            setIsAndroidModalVisible(true);
+        }
     };
 
-    const handleDeleteGroup = async (groupId: string) => {
-        await deleteDoc(doc(firestoreDB, "groups", groupId));
+    const handleDeleteGroup = (groupId: string) => {
+        setIsModalVisible(true);
+        setSelectedGroupId(groupId);
+    };
+
+    const handleConfirmDeleteGroup = async (groupId: string) => {
+        setLoading(true);
+        try {
+            await deleteDoc(doc(firestoreDB, "groups", groupId));
+        } catch (error) {
+            console.log(error)
+        } finally {
+            setIsModalVisible(false);
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -104,17 +148,48 @@ const groups = () => {
                                         <Text style={styles.groupDescription}>{group.description}</Text>
                                     </TouchableOpacity>
                                 </Link>
-                                <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={styles.trashIcon} >
-                                    <Ionicons name="trash-bin-outline" size={24} color="#000" />
-                                </TouchableOpacity>
+                                {group.from === user?.uid && (
+                                    <TouchableOpacity onPress={() => handleDeleteGroup(group.id)} style={styles.trashIcon}>
+                                        <Ionicons name="trash-bin-outline" size={24} color="#000" />
+                                    </TouchableOpacity>
+                                )}
+
                             </View>
                         ))}
+                        {isModalVisible && (
+                            <DeleteModal
+                                modalVisible={isModalVisible}
+                                setIsModalVisible={setIsModalVisible}
+                                onConfirm={handleConfirmDeleteGroup}
+                                id={selectedGroupId}
+                            />
+                        )}
                     </ScrollView>
                 )}
                 <TouchableOpacity style={styles.fab} onPress={handleCreateGroups}>
                     <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
-            </View >
+
+            </View>
+            {isAndroidModalVisible && (
+                <View>
+                    <Dialog.Container visible={true}>
+                        <Dialog.Title>Create New Group</Dialog.Title>
+                        <Dialog.Description>
+                            Insert a new group name
+                            <TextInput
+                                value={newGroupText}
+                                onChangeText={setNewGroupText}
+                                placeholder="Insert a new group name"
+                                style={styles.inputField}
+                            />
+                        </Dialog.Description>
+                        <Dialog.Button onPress={() => setIsAndroidModalVisible(false)} label="Cancel" />
+                        <Dialog.Button onPress={handleCreateNewGroup} label="Create Group" />
+                    </Dialog.Container>
+                </View>
+            )}
+
         </>
     );
 };
@@ -162,6 +237,11 @@ const styles = StyleSheet.create({
     trashIcon: {
         marginLeft: 'auto'
     },
+    inputField: {
+        padding: 20,
+        height: 20,
+        width: '100%'
+    }
 });
 
 export default groups
