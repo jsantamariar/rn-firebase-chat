@@ -24,13 +24,11 @@ const groups = () => {
 
     const [loading, setLoading] = useState(false);
     const [loadingGroups, setLoadingGroups] = useState(false);
-    const [groups, setGroups] = useState<Group[]>([]);
-    const [isAndroidModalVisible, setIsAndroidModalVisible] = useState(false);
-    const [newGroupText, setNewGroupText] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isAndroidModalVisible, setIsAndroidModalVisible] = useState(false);
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [newGroupText, setNewGroupText] = useState('');
     const [selectedGroupId, setSelectedGroupId] = useState<null | string>(null);
-
-    const groupsCollection = collection(firestoreDB, "groups");
 
     const handleCreateNewGroup = async () => {
         try {
@@ -108,6 +106,8 @@ const groups = () => {
 
     useEffect(() => {
         setLoadingGroups(true);
+
+        const groupsCollection = collection(firestoreDB, "groups");
         const q = query(groupsCollection, orderBy("createdAt", "asc"));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -169,7 +169,6 @@ const groups = () => {
                 <TouchableOpacity style={styles.fab} onPress={handleCreateGroups}>
                     <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
-
             </View>
             {isAndroidModalVisible && (
                 <View>
@@ -189,7 +188,6 @@ const groups = () => {
                     </Dialog.Container>
                 </View>
             )}
-
         </>
     );
 };
@@ -241,7 +239,7 @@ const styles = StyleSheet.create({
         padding: 20,
         height: 20,
         width: '100%'
-    }
+    },
 });
 
 export default groups

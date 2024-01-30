@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Alert, ScrollView, Button, Image } from 'react-native';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Ionicons } from '@expo/vector-icons';
-import { firestoreDB } from '@/config/FirebaseConfig';
+import * as ImagePicker from 'expo-image-picker';
+import Spinner from 'react-native-loading-spinner-overlay';
+import { firebaseStorage, firestoreDB } from '@/config/FirebaseConfig';
 import { useAuth } from '@/context/AuthContext';
 import Skeleton from '@/components/Skeleton';
 
@@ -14,7 +17,19 @@ interface UserInfo {
 const profile = () => {
     const { user } = useAuth();
     const [userInfo, setUserInfo] = useState<UserInfo>({ email: "", username: "" })
+    const [image, setImage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const loadUserImage = async () => {
+        try {
+            const avatarRef = ref(firebaseStorage, `avatars/${user?.uid}.jpg`);
+            const avatarUrl = await getDownloadURL(avatarRef);
+            setImage(avatarUrl);
+        } catch (error) {
+            console.log(error)
+        }
+    };
 
     const loadUserInfo = async () => {
         setLoading(true);
@@ -23,7 +38,9 @@ const profile = () => {
 
             if (userDocument.exists()) {
                 setUserInfo({ email: userDocument.data().email, username: userDocument.data().username });
+                loadUserImage();
             }
+
         } catch (error) {
             console.log(error)
         } finally {
@@ -61,13 +78,39 @@ const profile = () => {
         ]);
     };
 
+    const openImagePicker = async () => {
+        const pickerResult = await ImagePicker.launchImageLibraryAsync();
+
+        if (pickerResult.canceled) return;
+
+        setUploading(true);
+        try {
+            const imageRef = await uploadToFirebase(pickerResult.assets[0].uri)
+            setImage(imageRef)
+
+        } catch (error: any) {
+            console.log('error', error.message)
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const uploadToFirebase = async (uri: string) => {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        const avatarRef = ref(firebaseStorage, `avatars/${user?.uid}.jpg`)
+        await uploadBytes(avatarRef, blob);
+        return await getDownloadURL(avatarRef);
+    };
+
     useEffect(() => {
         loadUserInfo();
     }, []);
 
-
     return (
         <View style={styles.container}>
+            <Spinner visible={uploading} textContent="Uploading..." />
             {loading && (
                 <ScrollView>
                     {[...new Array(1)].map((_, index) => (
@@ -77,6 +120,12 @@ const profile = () => {
             )}
             {!loading && (
                 <View style={styles.card}>
+                    <View style={styles.profileImageContainer}>
+                        {image &&
+                            <Image source={{ uri: image }} style={styles.profileImage} />
+                        }
+                        <Button title="Pick an image" onPress={openImagePicker} />
+                    </View>
                     <View style={styles.cardLabelContainer}>
                         <Text style={styles.label}>
                             Username:
@@ -135,6 +184,16 @@ const styles = StyleSheet.create({
     },
     userInfo: {
         fontSize: 16
+    },
+    profileImageContainer: {
+        alignItems: 'center',
+        paddingVertical: 20
+    },
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 75,
+        resizeMode: 'cover'
     }
 });
 
